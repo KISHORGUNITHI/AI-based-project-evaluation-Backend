@@ -24,6 +24,8 @@ export const auth = betterAuth({
 		// Vercel — wildcard handled via CORS in app.ts; list known ones here
 		"https://ai-project-evaluation.vercel.app",
 		"https://ai-project-evaluation-git-main-mohan0621s-projects.vercel.app",
+		// Correct production frontend URL
+		"https://ai-based-project-evaluation.vercel.app",
 	],
 	emailAndPassword: {
 		enabled: true,
