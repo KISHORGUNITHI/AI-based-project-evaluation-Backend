@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.example
+.env.development
+.env.production
+
+prisma.config.js
+prisma.config.js.map
+prisma.config.d.ts
+prisma.config.d.ts.map
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+
+# Prisma migrations (keep schema, ignore migration history if desired)
+# Uncomment below if you don't want to track migrations:
+# prisma/migrations/
+
+# Uploaded / test files — PDFs, PPTs, docs in repo root
+*.pdf
+*.pptx
+*.ppt
+*.docx
+*.xlsx
+
+# Test / debug scripts (one-off scripts, not production code)
+test-*.py
+test-*.ts
+test-*.js
+auth-bypass-report.py
+check_student_create.py
+create_test_user.ts
+TESTING_REPORT.py
+
+# Prisma compiled config
+prisma.config.js
+prisma.config.js.map
+prisma.config.d.ts
+prisma.config.d.ts.map
+
+# Kiro IDE files
+.kiro/

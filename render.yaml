@@ -1,0 +1,132 @@
+services:
+  # ── Web Service (API Server) ──────────────────────────────────────────────
+  - type: web
+    name: evalai-backend
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: pnpm install && pnpm build
+    startCommand: node dist/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false          # Set in Render dashboard
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: BETTER_AUTH_URL
+        sync: false          # Set to your Render service URL e.g. https://evalai-backend.onrender.com
+      - key: FRONTEND_URL
+        sync: false          # Set to your frontend URL e.g. https://evalai.vercel.app
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: NIM_MODEL
+        value: meta/llama-3.3-70b-instruct
+      - key: AMQP_URL
+        sync: false          # CloudAMQP URL
+      - key: GITHUB_TOKEN
+        sync: false          # Optional: for private repos
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_BASE_URL
+        sync: false
+
+  # ── Background Workers ────────────────────────────────────────────────────
+  # Render "Background Worker" services — no HTTP port, just run a process
+
+  - type: worker
+    name: evalai-worker-doc
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: pnpm install && pnpm build
+    startCommand: node dist/workers/doc-worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: AMQP_URL
+        sync: false
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: NIM_MODEL
+        value: meta/llama-3.3-70b-instruct
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_BASE_URL
+        sync: false
+
+  - type: worker
+    name: evalai-worker-github
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: pnpm install && pnpm build
+    startCommand: node dist/workers/github-worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: AMQP_URL
+        sync: false
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: NIM_MODEL
+        value: meta/llama-3.3-70b-instruct
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_BASE_URL
+        sync: false
+
+  - type: worker
+    name: evalai-worker-agent
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: pnpm install && pnpm build
+    startCommand: node dist/workers/agent-worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: AMQP_URL
+        sync: false
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: NIM_MODEL
+        value: meta/llama-3.3-70b-instruct
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_BASE_URL
+        sync: false
+
+  - type: worker
+    name: evalai-worker-notification
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: pnpm install && pnpm build
+    startCommand: node dist/workers/notification-worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: AMQP_URL
+        sync: false

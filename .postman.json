@@ -1,0 +1,45 @@
+{
+  "version": "0.1",
+  "project": {
+    "name": "AI Project Evaluation API",
+    "baseUrl": "http://localhost:3000",
+    "description": "Backend for the AI Project Evaluation platform — students, judges, teams and health."
+  },
+  "default": {
+    "workspace": "main",
+    "collection": "api-tests",
+    "environment": "local"
+  },
+  "workspaces": {
+    "main": {
+      "id": "2a4c8646-8911-49dc-8d53-9d01c33c1f2e",
+      "name": "Mohan Chandra's Workspace",
+      "type": "team"
+    }
+  },
+  "collections": {
+    "api-tests": {
+      "id": "85db47ad-e2bb-41f4-80aa-7d4f771fbce4",
+      "uid": "50456779-85db47ad-e2bb-41f4-80aa-7d4f771fbce4",
+      "name": "AI Project Evaluation API",
+      "workspace": "main",
+      "description": "Full API test suite — Health, Auth, Student, Judge, Team"
+    }
+  },
+  "environments": {
+    "local": {
+      "id": "c0a3c225-5b16-4ec3-a68d-2c3ee581d72d",
+      "uid": "50456779-c0a3c225-5b16-4ec3-a68d-2c3ee581d72d",
+      "name": "AI Project Evaluation - Local",
+      "workspace": "main",
+      "variables": {
+        "BASE_URL": "http://localhost:3000",
+        "AUTH_TOKEN": "",
+        "STUDENT_TOKEN": "8ylqny92CINFNWs1DuQ5dvFWbchJYPGW",
+        "JUDGE_TOKEN": "pxTCxqwQfgDLDjxoNH8nVlKhoUEU9Cgv",
+        "TEAM_ID": "",
+        "STUDENT_ID": ""
+      }
+    }
+  }
+}

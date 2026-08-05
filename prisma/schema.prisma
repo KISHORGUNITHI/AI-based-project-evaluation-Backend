@@ -1,0 +1,365 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  JUDGE
+  ADMIN
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  username          String?  @unique
+  email             String   @unique
+  emailVerified     Boolean  @default(false)
+  image             String?
+  mustChangePassword Boolean @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  role Role @default(STUDENT)
+
+  sessions Session[]
+  accounts Account[]
+
+  student Student?
+  judge   Judge?
+  admin   Admin?
+
+  notifications Notification[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id         String @id @default(cuid())
+  accountId  String
+  providerId String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+
+  scope    String?
+  password String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id String @id @default(cuid())
+
+  identifier String
+  value      String
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("verification")
+}
+
+model Student {
+  id String @id @default(cuid())
+
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rollNumber String @unique
+
+  department String
+
+  collegeName String
+
+  phonenumber BigInt
+
+  year Int
+
+  cgpa Decimal?
+
+  githubUrl String?
+
+  leetcode String?
+
+  portfolio String?
+
+  linkedin String?
+
+  teams       TeamMember[] @relation("TeamMembers")
+  ledTeams    Team[]       @relation("TeamLeader")
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("student")
+}
+
+model Judge {
+  id String @id @default(cuid())
+
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organization String?
+
+  designation String?
+
+  expertise String[]
+
+  experience Int?
+
+  bio String?
+
+  evaluations Evaluation[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("judge")
+}
+
+model Admin {
+  id String @id @default(cuid())
+
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  designation String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("admin")
+}
+
+model Team {
+  id String @id @default(cuid())
+
+  name String @unique
+
+  members TeamMember[]
+
+  createdBy String
+
+  teamLeaderId String
+
+  teamLeader Student @relation("TeamLeader", fields: [teamLeaderId], references: [id])
+
+  projects Project[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("team")
+}
+
+enum ProjectStatus {
+  DRAFT
+  SUBMITTED
+  EVALUATING
+  EVALUATED
+  REJECTED
+}
+
+model Project {
+  id String @id @default(cuid())
+
+  title String
+
+  description String?
+
+  domain String
+
+  githubUrl String?
+
+  reportUrl String?
+
+  pptUrl String?
+
+  videoUrl String?
+
+  status ProjectStatus @default(DRAFT)
+
+  teamId String
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  submissions Submission[]
+  evaluations Evaluation[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("project")
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  EVALUATING
+  EVALUATED
+  REJECTED
+}
+
+model Submission {
+  id String @id @default(cuid())
+
+  projectId String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  version Int @default(1)
+
+  githubUrl String?
+
+  reportUrl String?
+
+  pptUrl String?
+
+  videoUrl String?
+
+  status SubmissionStatus @default(SUBMITTED)
+
+  evaluation Evaluation?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("submission")
+}
+
+model TeamMember {
+  id String @id @default(cuid())
+
+  teamId String
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   Student @relation("TeamMembers", fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, studentId])
+
+  @@map("teamMember")
+}
+
+enum EvaluationStatus {
+  PENDING
+  AI_EVALUATING
+  AI_COMPLETED
+  JUDGE_EVALUATING
+  COMPLETED
+}
+
+model Evaluation {
+  id String @id @default(cuid())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  submissionId String    @unique
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  judgeId String?
+  judge   Judge?  @relation(fields: [judgeId], references: [id])
+
+  aiScore    Decimal?
+  judgeScore Decimal?
+  finalScore Decimal?
+
+  problemStatementScore Decimal?
+  solutionDesignScore   Decimal?
+  implementationScore   Decimal?
+  innovationScore       Decimal?
+  documentationScore    Decimal?
+
+  strengths   String[]
+  weaknesses  String[]
+  suggestions String[]
+
+  feedback String?
+
+  status EvaluationStatus @default(PENDING)
+
+  rubricProblemStatement Int?
+  rubricSolutionDesign   Int?
+  rubricImplementation   Int?
+  rubricInnovation       Int?
+  rubricDocumentation    Int?
+  rubricSetByJudge       Boolean @default(false)
+
+  // Intermediate extraction results stored by workers
+  pdfText          String?
+  pptText          String?
+  githubSummary    String?
+  documentAnalysis Json?
+  codeAnalysis     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("evaluation")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      String
+
+  message   String
+
+  read      Boolean  @default(false)
+
+  entityId  String?
+
+  createdAt DateTime @default(now())
+
+  @@map("notification")
+}

@@ -1,0 +1,93 @@
+{
+  "name": "student-readiness-score-engine-backend",
+  "version": "1.0.0",
+  "description": "AI Project EvaluationAgent Backend",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch --tsconfig tsconfig.json -r tsconfig-paths/register src/server.ts",
+    "build": "prisma generate && tsc --project tsconfig.json",
+    "postinstall": "prisma generate",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "seed:judge-test": "tsx scripts/seed-judge-test.ts",
+    "lint": "biome lint ./src",
+    "format": "biome format ./src",
+    "check": "biome check ./src",
+    "check:fix": "biome check --write ./src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "worker:doc": "tsx src/workers/doc-worker.ts",
+    "worker:github": "tsx src/workers/github-worker.ts",
+    "worker:agent": "tsx src/workers/agent-worker.ts",
+    "worker:notification": "tsx src/workers/notification-worker.ts",
+    "worker:legacy": "tsx src/workers/evaluation-worker.ts",
+    "test:workers": "tsx scripts/test-worker-pipeline.ts",
+    "check:workers": "tsx scripts/check-worker-health.ts"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.33.2",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@google/genai",
+      "@prisma/engines",
+      "@scarf/scarf",
+      "esbuild",
+      "prisma"
+    ],
+    "ignoredBuiltDependencies": [
+      "protobufjs"
+    ]
+  },
+  "dependencies": {
+    "@google/genai": "^2.9.0",
+    "@langchain/core": "^1.2.1",
+    "@langchain/google-genai": "^2.2.0",
+    "@langchain/langgraph": "^1.4.7",
+    "@langchain/openai": "^1.5.3",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@types/cookie-parser": "^1.4.10",
+    "amqplib": "^2.0.1",
+    "better-auth": "^1.6.14",
+    "cloudinary": "^2.10.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "langfuse": "^3.38.20",
+    "multer": "^2.2.0",
+    "officeparser": "^7.2.1",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.21.0",
+    "redis": "4.7.0",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@types/amqplib": "^0.10.8",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.9.1",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.0",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.9",
+    "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
