@@ -2,6 +2,7 @@ import type { LangfuseTraceClient } from "langfuse";
 import type { EvaluationState } from "../state.js";
 import type { ProgressCallback } from "../evalution-graph.js";
 import { getNimModel } from "../../../../lib/nim.js";
+import { HybridRagService } from "../../rag/index.js";
 import { z } from "zod";
 
 export const evaluationResultZodSchema = z.object({
@@ -110,6 +111,33 @@ export async function evaluationAgent(
 
         const hasDoc = (doc.problemStatement?.length ?? 0) > 30;
 
+        // ── Retrieve evidence via Advanced Hybrid RAG (BM25 + Dense + Re-ranking) ──
+        let ragEvidence = "";
+        try {
+            const rag = new HybridRagService();
+            const chunkCount = await rag.indexProject({
+                pdfText: state.pdfText,
+                pptText: state.pptText,
+                readmeContent: state.githubSummary,
+            });
+
+            if (chunkCount > 0) {
+                const [implEv, solEv, probEv] = await Promise.all([
+                    rag.retrieveEvidenceForRubric("implementation"),
+                    rag.retrieveEvidenceForRubric("solutionDesign"),
+                    rag.retrieveEvidenceForRubric("problemStatement"),
+                ]);
+                ragEvidence = [
+                    "=== GROUNDED RAG EVIDENCE (HYBRID RETRIEVAL + CROSS-ENCODER RE-RANKING) ===",
+                    probEv ? `[Problem Statement Evidence]:\n${probEv.slice(0, 800)}` : "",
+                    solEv ? `[Architecture & Design Evidence]:\n${solEv.slice(0, 1000)}` : "",
+                    implEv ? `[Implementation & Code Quality Evidence]:\n${implEv.slice(0, 1200)}` : "",
+                ].filter(Boolean).join("\n\n");
+            }
+        } catch (ragErr) {
+            console.warn("[evaluationAgent] RAG evidence retrieval failed, falling back to static context:", ragErr);
+        }
+
         const prompt = `You are an expert technical judge evaluating a student hackathon project. You have been given FULL analysis of their documents and code. Use ALL the evidence provided to give a fair, specific, and detailed evaluation.
 
 === PROJECT: ${state.projectTitle} ===
@@ -120,6 +148,7 @@ ${hasDoc ? docContext : "No document content available."}
 === CODE ANALYSIS ===
 ${codeContext}
 
+${ragEvidence ? `${ragEvidence}\n` : ""}
 === RUBRIC WEIGHTS ===
 ${Object.entries(state.rubric).map(([k, v]) => `${k}: ${v}%`).join(", ")}
 
