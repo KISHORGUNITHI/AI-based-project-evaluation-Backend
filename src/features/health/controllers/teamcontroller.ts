@@ -43,9 +43,27 @@ export default class TeamController {
 
 	async addMember(req: Request, res: Response) {
 		try {
+			const teamId = String(req.params["id"]);
+			let studentId = req.body.studentId ? String(req.body.studentId).trim() : "";
+			const rollNumber = req.body.rollNumber ? String(req.body.rollNumber).trim() : "";
+
+			if (!studentId && rollNumber) {
+				const foundStudent = await prisma.student.findFirst({
+					where: { rollNumber: { equals: rollNumber, mode: "insensitive" } },
+				});
+				if (!foundStudent) {
+					return res.status(404).json({ message: `No student found with roll number: ${rollNumber}` });
+				}
+				studentId = foundStudent.id;
+			}
+
+			if (!studentId) {
+				return res.status(400).json({ message: "studentId or rollNumber is required" });
+			}
+
 			const member = await this.teamService.addMember({
-				teamId: String(req.params["id"]),
-				studentId: String(req.body.studentId),
+				teamId,
+				studentId,
 			});
 			return res.status(201).json({ message: "Member added successfully", member });
 		} catch (error: unknown) {

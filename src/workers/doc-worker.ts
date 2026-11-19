@@ -26,9 +26,9 @@ async function extractPdfText(reportUrl: string): Promise<string> {
         let buffer: Buffer;
 
         if (reportUrl.startsWith("http://") || reportUrl.startsWith("https://")) {
-            // Remote URL — download in memory
+            // Remote URL — download in memory with 15s timeout
             console.log(`[doc-worker] Downloading PDF: ${reportUrl}`);
-            const res = await fetch(reportUrl);
+            const res = await fetch(reportUrl, { signal: AbortSignal.timeout(15_000) });
             if (!res.ok) {
                 console.warn(`[doc-worker] PDF download failed: HTTP ${res.status}`);
                 return "";
@@ -62,9 +62,9 @@ async function extractPptText(pptUrl: string): Promise<string> {
         let isTmp = false;
 
         if (pptUrl.startsWith("http://") || pptUrl.startsWith("https://")) {
-            // Remote URL — download to temp file (officeparser needs a file path)
+            // Remote URL — download to temp file with 15s timeout (officeparser needs a file path)
             console.log(`[doc-worker] Downloading PPT: ${pptUrl}`);
-            const res = await fetch(pptUrl);
+            const res = await fetch(pptUrl, { signal: AbortSignal.timeout(15_000) });
             if (!res.ok) {
                 console.warn(`[doc-worker] PPT download failed: HTTP ${res.status}`);
                 return "";

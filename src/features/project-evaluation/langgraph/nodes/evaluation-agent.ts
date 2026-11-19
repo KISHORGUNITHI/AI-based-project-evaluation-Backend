@@ -189,22 +189,24 @@ Respond ONLY with valid JSON (no markdown, no extra text):
             input: { promptLen: prompt.length, hasDoc, hasCode },
         }) ?? null;
 
-        const response = await model.invoke(prompt);
-        const rawText = typeof response.content === "string" ? response.content : JSON.stringify(response.content);
-
-        console.log(`[evaluationAgent] Raw response (500c): ${rawText.slice(0, 500)}`);
-
         let parsed: any = null;
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            try { parsed = JSON.parse(jsonMatch[0]); } catch { /* fall through */ }
+        try {
+            const structured = model.withStructuredOutput(evaluationResultZodSchema);
+            parsed = await structured.invoke(prompt);
+        } catch {
+            const response = await model.invoke(prompt);
+            const rawText = typeof response.content === "string" ? response.content : JSON.stringify(response.content);
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                try { parsed = JSON.parse(jsonMatch[0]); } catch { /* fall through */ }
+            }
         }
 
-        const problemStatementScore = Math.min(10, Math.max(0, parsed?.problemStatementScore ?? extractScore(rawText, "problemStatementScore") ?? (hasDoc ? 5 : 2)));
-        const solutionDesignScore   = Math.min(10, Math.max(0, parsed?.solutionDesignScore   ?? extractScore(rawText, "solutionDesignScore")   ?? (hasDoc ? 5 : 2)));
-        const implementationScore   = Math.min(10, Math.max(0, parsed?.implementationScore   ?? extractScore(rawText, "implementationScore")   ?? (hasCode ? 5 : 0)));
-        const innovationScore       = Math.min(10, Math.max(0, parsed?.innovationScore       ?? extractScore(rawText, "innovationScore")       ?? 4));
-        const documentationScore    = Math.min(10, Math.max(0, parsed?.documentationScore    ?? extractScore(rawText, "documentationScore")    ?? (code.hasDocumentation ? 6 : 3)));
+        const problemStatementScore = Math.min(10, Math.max(0, parsed?.problemStatementScore ?? extractScore(JSON.stringify(parsed || ""), "problemStatementScore") ?? (hasDoc ? 5 : 2)));
+        const solutionDesignScore   = Math.min(10, Math.max(0, parsed?.solutionDesignScore   ?? extractScore(JSON.stringify(parsed || ""), "solutionDesignScore")   ?? (hasDoc ? 5 : 2)));
+        const implementationScore   = Math.min(10, Math.max(0, parsed?.implementationScore   ?? extractScore(JSON.stringify(parsed || ""), "implementationScore")   ?? (hasCode ? 5 : 0)));
+        const innovationScore       = Math.min(10, Math.max(0, parsed?.innovationScore       ?? extractScore(JSON.stringify(parsed || ""), "innovationScore")       ?? 4));
+        const documentationScore    = Math.min(10, Math.max(0, parsed?.documentationScore    ?? extractScore(JSON.stringify(parsed || ""), "documentationScore")    ?? (code.hasDocumentation ? 6 : 3)));
 
         const aiScore = Math.round(
             (problemStatementScore * state.rubric.problemStatement +

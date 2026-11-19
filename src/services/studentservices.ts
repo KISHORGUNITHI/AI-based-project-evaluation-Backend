@@ -77,6 +77,31 @@ export default class StudentService {
 
     }
 
+    async searchStudent(query: string) {
+        const trimmed = query.trim();
+        if (!trimmed) return null;
+
+        const student = await prisma.student.findFirst({
+            where: {
+                OR: [
+                    { rollNumber: { equals: trimmed, mode: "insensitive" } },
+                    { user: { email: { equals: trimmed, mode: "insensitive" } } },
+                ],
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
+        });
+
+        return student;
+    }
+
 	async updateProfile(userId: string, data: Partial<StudentInterface>) {
 
         const student =

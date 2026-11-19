@@ -57,6 +57,34 @@ studentroutes.post("/create", requireRole("STUDENT"), (req: Request, res: Respon
 
 /**
  * @openapi
+ * /api/student/search:
+ *   get:
+ *     summary: Search for a student by roll number or email
+ *     description: Searches for a registered student by roll number or user email.
+ *     tags: [Student]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Roll number or email
+ *     responses:
+ *       200:
+ *         description: Student found
+ *       400:
+ *         description: Missing query parameter
+ *       404:
+ *         description: Student not found
+ */
+studentroutes.get("/search", requireRole("STUDENT"), (req: Request, res: Response) => {
+    studentcontroller.searchStudent(req, res);
+});
+
+/**
+ * @openapi
  * /api/student/profile:
  *   get:
  *     summary: Get my student profile

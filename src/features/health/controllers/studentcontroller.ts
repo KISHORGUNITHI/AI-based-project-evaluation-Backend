@@ -78,4 +78,22 @@ export default class StudentController {
 			return res.status(400).json({ message: msg });
 		}
 	}
+
+	async searchStudent(req: Request, res: Response) {
+		try {
+			const query = req.query["q"] ? String(req.query["q"]).trim() : "";
+			if (!query) {
+				return res.status(400).json({ message: "Search query 'q' is required" });
+			}
+			const studentService = new StudentService();
+			const student = await studentService.searchStudent(query);
+			if (!student) {
+				return res.status(404).json({ message: `No student found matching '${query}'` });
+			}
+			return res.status(200).json({ student: serializeStudent(student as Record<string, unknown>) });
+		} catch (error: unknown) {
+			const msg = error instanceof Error ? error.message : "Unknown error";
+			return res.status(500).json({ message: msg });
+		}
+	}
 }

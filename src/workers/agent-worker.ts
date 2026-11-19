@@ -24,7 +24,7 @@ import { buildAgentsOnlyGraph } from "../features/project-evaluation/langgraph/e
 import { getLangfuse } from "../lib/langfuse.js";
 import { progressQueueName } from "./progress.js";
 
-const SIGNAL_WAIT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max wait for second signal
+const SIGNAL_WAIT_TIMEOUT_MS = 45 * 1000; // 45 seconds max wait for second signal
 
 async function startAgentWorker() {
     console.log("[agent-worker] Starting...");
@@ -128,7 +128,20 @@ async function startAgentWorker() {
                 error:            undefined,
             });
 
-            await publishTransient(progressQueue, { step: "done", status: "completed" });
+            const finishedEvaluation = await prisma.evaluation.findUnique({
+                where: { id: evaluationId },
+                include: {
+                    project: { include: { team: true } },
+                    submission: true,
+                    judge: true,
+                },
+            });
+
+            await publishTransient(progressQueue, { 
+                step: "done", 
+                status: "completed", 
+                evaluation: finishedEvaluation 
+            });
 
             const userIds = evaluation.project.team.members.map((m: any) => m.student.user.id);
             await publishMessage(QUEUES.NOTIFICATION, {

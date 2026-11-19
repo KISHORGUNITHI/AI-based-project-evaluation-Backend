@@ -12,14 +12,20 @@ export default class TeamService {
             throw new Error("A team with that name already exists");
         }
 
+        // Ensure team leader is included in the team members list
+        const memberIds = new Set(data.members.map((m) => m.studentId));
+        if (data.teamLeaderId) {
+            memberIds.add(data.teamLeaderId);
+        }
+
         const team = await prisma.team.create({
             data: {
                 name: data.name,
                 createdBy: data.createdBy,
                 teamLeaderId: data.teamLeaderId,
                 members: {
-                    create: data.members.map((m) => ({
-                        studentId: m.studentId
+                    create: Array.from(memberIds).map((studentId) => ({
+                        studentId,
                     }))
                 }
             },

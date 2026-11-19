@@ -10,7 +10,7 @@ const envSchema = z.object({
 	BETTER_AUTH_URL: z.string().url(),
 	FRONTEND_URL: z.string().url().default("http://localhost:5173"),
 	NVIDIA_API_KEY: z.string().min(1),
-	NIM_MODEL: z.string().default("meta/llama-3.3-70b-instruct"),
+	NIM_MODEL: z.string().default("minimaxai/minimax-m3.1-flash"),
 	AMQP_URL: z.string().min(1),
 	GITHUB_TOKEN: z.string().optional(),
 	BACKEND_URL: z.string().url().optional(),

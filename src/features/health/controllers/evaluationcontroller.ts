@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import EvaluationService from "../../../services/evaluationservices.js";
 import { connectRabbitMQ } from "../../../config/rabbitmq.js";
 import { progressQueueName } from "../../../workers/progress.js";
+import { QUEUES } from "../../../queue/queues.js";
 
 export default class EvaluationController {
 	private evaluationService: EvaluationService;
@@ -180,52 +181,81 @@ export default class EvaluationController {
 
 			send({ step: "starting", status: "started" });
 
-			// Subscribe to the per-evaluation progress queue BEFORE publishing the job.
-			// This ensures no progress messages are dropped during the startup race.
+			// Check if background RabbitMQ workers are available and listening
+			let useWorkers = false;
+			let channel: any = null;
 			const progressQueue = progressQueueName(evaluationId);
 			let consumerTag = "";
 
 			try {
-				const channel = await connectRabbitMQ();
-
-				// Declare as auto-delete so it cleans up once all consumers disconnect.
-				// Must be declared BEFORE publishing to guarantee the queue exists.
-				await channel.assertQueue(progressQueue, { durable: false, autoDelete: true });
-
-				const { consumerTag: tag } = await channel.consume(progressQueue, (msg) => {
-					if (!msg) return;
-
-					try {
-						const event = JSON.parse(msg.content.toString()) as Record<string, unknown>;
-						send(event);
-						channel.ack(msg);
-
-						// Stop consuming once the pipeline signals completion or failure
-						const isDone =
-							(event.step === "done" && event.status === "completed") ||
-							(event.step === "error" && event.status === "failed");
-
-						if (isDone) {
-							channel.cancel(consumerTag).catch(() => {});
-							res.end();
-						}
-					} catch {
-						channel.nack(msg, false, false);
-					}
-				});
-
-				consumerTag = tag;
-
-				// Cleanup if client disconnects early
-				req.on("close", () => {
-					channel.cancel(consumerTag).catch(() => {});
-				});
-
-				// Now that the subscriber is active, publish the job.
-				// This prevents any progress events from being dropped.
-				await this.evaluationService.queueAiEvaluation(evaluationId, judge.id);
+				channel = await connectRabbitMQ();
+				const docQ = await channel.assertQueue(QUEUES.DOC_ANALYSIS, { durable: true });
+				const agentQ = await channel.assertQueue(QUEUES.AGENT_RUN, { durable: true });
+				// Only delegate to workers if both doc-worker and agent-worker are actively consuming
+				if (docQ.consumerCount > 0 && agentQ.consumerCount > 0) {
+					useWorkers = true;
+				}
 			} catch (err: unknown) {
-				const msg = err instanceof Error ? err.message : "Failed to subscribe to progress queue";
+				console.warn(
+					"[triggerAiEvaluation] RabbitMQ not ready or unavailable — falling back to in-process execution:",
+					(err as Error).message,
+				);
+			}
+
+			if (useWorkers && channel) {
+				console.log(`[triggerAiEvaluation] Active workers detected — delegating ${evaluationId} to RabbitMQ`);
+				try {
+					await channel.assertQueue(progressQueue, { durable: false, autoDelete: true });
+
+					const { consumerTag: tag } = await channel.consume(progressQueue, (msg: any) => {
+						if (!msg) return;
+
+						try {
+							const event = JSON.parse(msg.content.toString()) as Record<string, unknown>;
+							send(event);
+							channel.ack(msg);
+
+							const isDone =
+								(event.step === "done" && event.status === "completed") ||
+								(event.step === "error" && event.status === "failed");
+
+							if (isDone) {
+								channel.cancel(consumerTag).catch(() => {});
+								res.end();
+							}
+						} catch {
+							channel.nack(msg, false, false);
+						}
+					});
+
+					consumerTag = tag;
+
+					req.on("close", () => {
+						channel.cancel(consumerTag).catch(() => {});
+					});
+
+					await this.evaluationService.queueAiEvaluation(evaluationId, judge.id);
+					return;
+				} catch (err: unknown) {
+					console.error("[triggerAiEvaluation] Failed worker subscription, falling back to in-process:", err);
+				}
+			}
+
+			// In-process execution:
+			// Executes the evaluation graph directly inside this process.
+			// This guarantees that running 'npm run dev' works out-of-the-box without hanging!
+			console.log(`[triggerAiEvaluation] Running evaluation ${evaluationId} in-process...`);
+			try {
+				const updated = await this.evaluationService.triggerAiEvaluation(
+					evaluationId,
+					judge.id,
+					(event) => send(event),
+				);
+				send({ step: "done", status: "completed", evaluation: updated });
+				res.end();
+			} catch (err: unknown) {
+				const msg = err instanceof Error ? err.message : "AI evaluation failed";
+				console.error(`[triggerAiEvaluation] In-process evaluation failed for ${evaluationId}:`, msg);
 				send({ step: "error", status: "failed", message: msg });
 				res.end();
 			}

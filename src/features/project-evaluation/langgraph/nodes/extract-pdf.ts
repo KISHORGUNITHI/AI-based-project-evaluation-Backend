@@ -6,7 +6,7 @@ import type { ProgressCallback } from "../evalution-graph.js";
 
 /** Download a URL to a temp file, return the temp path */
 async function downloadToTemp(url: string, ext: string): Promise<string> {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status} downloading ${url}`);
     const buf = Buffer.from(await res.arrayBuffer());
     const tmp = path.join(os.tmpdir(), `eval-pdf-${Date.now()}${ext}`);

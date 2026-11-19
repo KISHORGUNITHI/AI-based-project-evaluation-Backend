@@ -31,8 +31,8 @@ async function startWorker() {
         };
 
         try {
-            await evaluationService.triggerAiEvaluation(evaluationId, judgeId, onProgress);
-            await publishTransient(progressQueue, { step: "done", status: "completed" });
+            const updated = await evaluationService.triggerAiEvaluation(evaluationId, judgeId, onProgress);
+            await publishTransient(progressQueue, { step: "done", status: "completed", evaluation: updated });
             console.log(`[worker] AI evaluation complete for ${evaluationId}`);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
